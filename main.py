@@ -16,15 +16,22 @@ def get_make_quote_command(message):
     original_message = message.reply_to_message
     if original_message is None:
         bot.send_message(message.chat.id,
-                         "The message for the quote wasn't found")
+                         "The message for the quote wasn't found.")
+        return
+    if original_message.text is None:
+        bot.send_message(message.chat.id,
+                         "There's no text for a quote in the message.")
         return
 
     send_quote_photo(original_message)
 
 
 def get_user_photo(user_id):
-    all_user_photos = bot.get_user_profile_photos(user_id)
-    photo = all_user_photos.photos[0][0]
+    try:
+        all_user_photos = bot.get_user_profile_photos(user_id)
+        photo = all_user_photos.photos[0][0]
+    except IndexError:
+        return None
     return photo.file_id
 
 
@@ -36,7 +43,8 @@ def send_quote_photo(message):
 
     # getting user photo id
     user_photo_id = get_user_photo(message.from_user.id)
-    bot.send_photo(message.chat.id, user_photo_id)
+    if user_photo_id is not None:
+        bot.send_photo(message.chat.id, user_photo_id)
 
     quote_photo_id = create_quote_photo(text,
                                         f"{user_first_name} {user_last_name}",
