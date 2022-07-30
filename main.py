@@ -15,10 +15,17 @@ FONT_COLOR = (240, 240, 230)
 def get_make_quote_command(message):
     original_message = message.reply_to_message
     if original_message is None:
-        bot.send_message(message.chat.id, "The message for the quote wasn't found")
+        bot.send_message(message.chat.id,
+                         "The message for the quote wasn't found")
         return
 
     send_quote_photo(original_message)
+
+
+def get_user_photo(user_id):
+    all_user_photos = bot.get_user_profile_photos(user_id)
+    photo = all_user_photos.photos[0][0]
+    return photo.file_id
 
 
 def send_quote_photo(message):
@@ -27,12 +34,16 @@ def send_quote_photo(message):
     user_last_name = user.last_name if user.last_name is not None else ''
     text = message.text
 
-    photo_id = create_quote_photo(text,
-                                  f"{user_first_name} {user_last_name}",
-                                  None)
-    with open(f'{photo_id}.jpg', 'rb') as photo:
+    # getting user photo id
+    user_photo_id = get_user_photo(message.from_user.id)
+    bot.send_photo(message.chat.id, user_photo_id)
+
+    quote_photo_id = create_quote_photo(text,
+                                        f"{user_first_name} {user_last_name}",
+                                        None)
+    with open(f'{quote_photo_id}.jpg', 'rb') as photo:
         bot.send_photo(message.chat.id, photo)
-    os.remove(f'{photo_id}.jpg')
+    os.remove(f'{quote_photo_id}.jpg')
 
 
 def split_text_into_rows(text):
@@ -60,7 +71,8 @@ def create_quote_photo(text, username, user_photo):
     image = Image.new('RGB', (image_width, image_height), color=(10, 10, 10))
     draw = ImageDraw.Draw(image)
     # drawing a text
-    draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR, font=FONT)
+    draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR,
+              font=FONT)
     draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
 
     draw.text((100, image_height - 150), username, fill=FONT_COLOR, font=FONT)
