@@ -40,15 +40,11 @@ def send_quote_photo(message):
     user_first_name = user.first_name if user.first_name is not None else ''
     user_last_name = user.last_name if user.last_name is not None else ''
     text = message.text
-
-    # getting user photo id
     user_photo_id = get_user_photo(message.from_user.id)
-    if user_photo_id is not None:
-        bot.send_photo(message.chat.id, user_photo_id)
 
     quote_photo_id = create_quote_photo(text,
                                         f"{user_first_name} {user_last_name}",
-                                        None)
+                                        user_photo_id)
     with open(f'{quote_photo_id}.jpg', 'rb') as photo:
         bot.send_photo(message.chat.id, photo)
     os.remove(f'{quote_photo_id}.jpg')
@@ -70,20 +66,36 @@ def split_text_into_rows(text):
     return lines
 
 
-def create_quote_photo(text, username, user_photo):
-    lines = split_text_into_rows(text)
+def create_image(lines):
     image_height = 600 if len(lines) < 4 else 350 + len(lines) * 57
     image_width = 1200
-
-    # creating an image
     image = Image.new('RGB', (image_width, image_height), color=(10, 10, 10))
-    draw = ImageDraw.Draw(image)
-    # drawing a text
-    draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR,
-              font=FONT)
-    draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
+    return image
 
-    draw.text((100, image_height - 150), username, fill=FONT_COLOR, font=FONT)
+
+def draw_user_avatar(image, user_photo_id):
+    if user_photo_id is not None:
+        file = bot.get_file(user_photo_id)
+        user_avatar_bytes = bot.download_file(file.file_path)
+
+        path = f"{file.file_id}.jpg"
+        with open(path, 'wb') as file:
+            file.write(user_avatar_bytes)
+        with Image.open(path, 'r') as file:
+            file = file.resize((100, 100))
+            image.paste(file, (80, image.height - 180, 180, image.height - 80))
+        os.remove(path)
+
+
+def create_quote_photo(text, username, user_photo_id):
+    lines = split_text_into_rows(text)
+    image = create_image(lines)
+
+    draw = ImageDraw.Draw(image)
+    draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR, font=FONT)
+    draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
+    draw_user_avatar(image, user_photo_id)
+    draw.text((200, image.height - 150), '© ' + username, fill=FONT_COLOR, font=FONT)
 
     # Saving
     photo_id = random.randint(1000000, 10000000)
