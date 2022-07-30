@@ -2,20 +2,22 @@ import os
 import random
 
 import telebot
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from private.config import TOKEN
 
 bot = telebot.TeleBot(TOKEN)
+FONT = ImageFont.truetype("Chevin-Cyrillic-Bold_10486.ttf",
+                          36, encoding='utf-8')
 
 
-@bot.message_handler(commands=[''])
+@bot.message_handler(commands=['', 'make_quote'])
 def get_make_quote_command(message):
     original_message = message.reply_to_message
     if original_message is None:
         bot.send_message(message.chat.id, 'Сообщение для цитаты не найдено')
         return
 
-    send_quote_photo(message)
+    send_quote_photo(original_message)
 
 
 def send_quote_photo(message):
@@ -32,8 +34,16 @@ def send_quote_photo(message):
     os.remove(f'{photo_id}.jpg')
 
 
+def split_text_into_rows(text):
+    return
+
+
 def create_quote_photo(text, username, user_photo):
-    image = Image.new('RGB', (200, 100), color=(10, 10, 10))
+    image = Image.new('RGB', (1000, 600), color=(10, 10, 10))
+    draw = ImageDraw.Draw(image)
+    draw.text((30, 30), text=text, fill=(220, 220, 200), font=FONT)
+
+    # Saving
     photo_id = random.randint(1000000, 10000000)
     image.save(f'{photo_id}.jpg')
     return photo_id
