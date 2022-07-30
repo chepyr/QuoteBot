@@ -2,7 +2,7 @@ import os
 import random
 
 import telebot
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from private.config import TOKEN
 
 bot = telebot.TeleBot(TOKEN)
@@ -73,18 +73,30 @@ def create_image(lines):
     return image
 
 
-def draw_user_avatar(image, user_photo_id):
+def make_photo_round(path):
+    size = (128, 128)
+    mask = Image.new('L', size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0) + size, fill=255)
+
+    im = Image.open(path)
+    output = ImageOps.fit(im, mask.size, centering=(0.5, 0.5))
+    output.putalpha(mask)
+    os.remove(path)
+    return output
+
+
+def draw_user_avatar(quote_image, user_photo_id):
     if user_photo_id is not None:
         file = bot.get_file(user_photo_id)
         user_avatar_bytes = bot.download_file(file.file_path)
 
-        path = f"{file.file_id}.jpg"
-        with open(path, 'wb') as file:
+        user_photo_path = f"{file.file_id}.jpg"
+        with open(user_photo_path, 'wb') as file:
             file.write(user_avatar_bytes)
-        with Image.open(path, 'r') as file:
-            file = file.resize((100, 100))
-            image.paste(file, (80, image.height - 180, 180, image.height - 80))
-        os.remove(path)
+
+        round_user_photo = make_photo_round(user_photo_path)
+        quote_image.paste(round_user_photo, (80, quote_image.height - 180), round_user_photo)
 
 
 def create_quote_photo(text, username, user_photo_id):
@@ -95,7 +107,7 @@ def create_quote_photo(text, username, user_photo_id):
     draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR, font=FONT)
     draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
     draw_user_avatar(image, user_photo_id)
-    draw.text((200, image.height - 150), '© ' + username, fill=FONT_COLOR, font=FONT)
+    draw.text((240, image.height - 150), '© ' + username, fill=FONT_COLOR, font=FONT)
 
     # Saving
     photo_id = random.randint(1000000, 10000000)
