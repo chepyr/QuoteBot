@@ -6,8 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 from private.config import TOKEN
 
 bot = telebot.TeleBot(TOKEN)
-FONT = ImageFont.truetype("Chevin-Cyrillic-Bold_10486.ttf",
-                          36, encoding='utf-8')
+FONT = ImageFont.truetype("Chevin-Cyrillic-Light_10488.ttf",
+                          50, encoding='utf-8')
+FONT_COLOR = (240, 240, 230)
 
 
 @bot.message_handler(commands=['', 'make_quote'])
@@ -36,27 +37,33 @@ def send_quote_photo(message):
 
 def split_text_into_rows(text):
     lines = []
-    words = text.split(' ')
-    line = '“ '
-    for word in words:
-        if len(line + ' ' + word) > 50:
-            lines.append(line)
-            line = word
-        else:
-            line += ' ' + word
-
-    lines.append(line + ' „.')
+    paragraphs = text.split('\n')
+    for paragraph in paragraphs:
+        words = paragraph.split(' ')
+        line = ''
+        for word in words:
+            if len(line + ' ' + word) > 50:
+                lines.append(line)
+                line = word
+            else:
+                line += ' ' + word
+        lines.append(line)
     return lines
 
 
 def create_quote_photo(text, username, user_photo):
-    text = split_text_into_rows(text)
-    image_height = 600 if len(text) < 8 else 300 + len(text) * 40
-    image_width = 1000
+    lines = split_text_into_rows(text)
+    image_height = 600 if len(lines) < 4 else 350 + len(lines) * 57
+    image_width = 1200
 
+    # creating an image
     image = Image.new('RGB', (image_width, image_height), color=(10, 10, 10))
     draw = ImageDraw.Draw(image)
-    draw.text((30, 100), text='\n'.join(text), fill=(220, 220, 200), font=FONT)
+    # drawing a text
+    draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR, font=FONT)
+    draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
+
+    draw.text((100, image_height - 150), username, fill=FONT_COLOR, font=FONT)
 
     # Saving
     photo_id = random.randint(1000000, 10000000)
