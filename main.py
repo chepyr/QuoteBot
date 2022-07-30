@@ -15,7 +15,7 @@ def get_make_quote_command(message):
         bot.send_message(message.chat.id, 'Сообщение для цитаты не найдено')
         return
 
-    send_quote(message)
+    send_quote_photo(message)
 
 
 def send_quote_photo(message):
