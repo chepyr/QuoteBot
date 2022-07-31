@@ -35,12 +35,21 @@ def get_user_photo(user_id):
     return photo.file_id
 
 
+def forwarded_message(message):
+    return message.forward_from is not None
+
+
 def send_quote_photo(message):
-    user = message.from_user
+    # check if message was forwarded
+    if forwarded_message(message):
+        user = message.forward_from
+    else:
+        user = message.from_user
+
     user_first_name = user.first_name if user.first_name is not None else ''
     user_last_name = user.last_name if user.last_name is not None else ''
     text = message.text
-    user_photo_id = get_user_photo(message.from_user.id)
+    user_photo_id = get_user_photo(user.id)
 
     quote_photo_id = create_quote_photo(text,
                                         f"{user_first_name} {user_last_name}",
@@ -63,18 +72,20 @@ def split_text_into_rows(text):
             else:
                 line += ' ' + word
         lines.append(line)
+    lines[0] = '«' + lines[0]
+    lines[-1] = lines[-1] + ' ».'
     return lines
 
 
 def create_image(lines):
-    image_height = 600 if len(lines) < 4 else 350 + len(lines) * 57
+    image_height = 600 if len(lines) < 4 else 400 + len(lines) * 58
     image_width = 1200
     image = Image.new('RGB', (image_width, image_height), color=(10, 10, 10))
     return image
 
 
-def make_photo_round(path):
-    size = (128, 128)
+def make_photo_rounded(path):
+    size = (150, 150)
     mask = Image.new('L', size, 0)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((0, 0) + size, fill=255)
@@ -95,8 +106,8 @@ def draw_user_avatar(quote_image, user_photo_id):
         with open(user_photo_path, 'wb') as file:
             file.write(user_avatar_bytes)
 
-        round_user_photo = make_photo_round(user_photo_path)
-        quote_image.paste(round_user_photo, (80, quote_image.height - 180), round_user_photo)
+        round_user_photo = make_photo_rounded(user_photo_path)
+        quote_image.paste(round_user_photo, (80, quote_image.height - 190), round_user_photo)
 
 
 def create_quote_photo(text, username, user_photo_id):
@@ -105,9 +116,9 @@ def create_quote_photo(text, username, user_photo_id):
 
     draw = ImageDraw.Draw(image)
     draw.text((400, 100), text="Great People Quotes", fill=FONT_COLOR, font=FONT)
-    draw.text((40, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
+    draw.text((70, 200), text='\n'.join(lines), fill=FONT_COLOR, font=FONT)
     draw_user_avatar(image, user_photo_id)
-    draw.text((240, image.height - 150), '© ' + username, fill=FONT_COLOR, font=FONT)
+    draw.text((260, image.height - 150), '© ' + username, fill=FONT_COLOR, font=FONT)
 
     # Saving
     photo_id = random.randint(1000000, 10000000)
